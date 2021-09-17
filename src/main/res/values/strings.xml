@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">MyChatApp</string>
+    <string name="dummy_message">This is a dummy message and will be updated in future Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book</string>
+    <string name="name_tv">Name</string>
+    <string name="email_tv">E-mail</string>
+    <string name="username_tv">Username</string>
+    <string name="password_tv">Password</string>
+    <string name="sign_up_button">Sign Up</string>
+    <string name="login_button">Login</string>
+    <string name="sign_in_instead">Already a user? Sign In</string>
+    <string name="account_not_verified">This account is not verified, please verify before signing in again</string>
+    <string name="verification_link_sent">A verification link has been sent to your email, please verify your email and click continue</string>
+    <string name="username_already_taken">This username is not available, please try another username</string>
+    <string name="enter_username">Enter a username</string>
+    <string name="cancel_search">Cancel</string>
+    <string name="perform_search">Search</string>
+    <string name="signuploginfailed">Error, please try again!!</string>
+    <string name="empty_username">Please enter a username</string>
+    <string name="username_not_found">No user with this username found</string>
+    <string name="no_internet">Something is wrong, please check your internet connection and try again!</string>
+    <string name="delete_message">Do you want to delete this message?</string>
+    <string name="delete_message_successful">Message deleted!</string>
+    <string name="delete_message_failed">Unable to delete message</string>
+    <string name="delete_user">Do you want to delete this user and all its messages?</string>
+    <string name="delete_all_users">Do you want to delete all users and all their respective chats?</string>
+    <string name="delete_user_successful">User and all its messages deleted!</string>
+    <string name="delete_all_users_successful">All users and all their messages deleted!</string>
+    <string name="delete_all_users_failed">Unable to delete users and their messages</string>
+    <string name="delete_user_failed">Unable to delete user</string>
+    <string name="delete_all_messages_failed">Unable to delete messages</string>
+    <string name="send_message_failed">Unable to send the message , please restart your internet and MyChatApp</string>
+</resources>
