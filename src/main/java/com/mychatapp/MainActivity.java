@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.view.Menu;
@@ -32,6 +33,7 @@ import com.mychatapp.contactlistdata.ContactListDatabase;
 import com.mychatapp.dialogs.DeleteDialog;
 import com.mychatapp.dialogs.SearchNewUserDialog;
 import com.mychatapp.launchTimeActivities.SplashActivity;
+import com.mychatapp.messagesdata.MessagesDbHelper;
 import com.mychatapp.models.Contact;
 import com.mychatapp.recyclerviewutils.ContactsAdapter;
 
@@ -105,6 +107,10 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Contact contact = task.getResult().getValue(Contact.class);
                         executor.execute(() -> mDb.contactsDao().deleteContactById(contact.getMUserID()));
+                        MessagesDbHelper messagesDbHelper=new MessagesDbHelper(MainActivity.this,deletedContactUID);
+                        SQLiteDatabase mDb=messagesDbHelper.getWritableDatabase();
+                        mDb.execSQL("DROP TABLE IF EXISTS receiver"+deletedContactUID);
+                        mDb.close();
                     }
                 });
 

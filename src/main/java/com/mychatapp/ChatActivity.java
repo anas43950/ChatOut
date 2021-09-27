@@ -173,17 +173,18 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
                 int item_id = item.getItemId();
                 if (item_id == R.id.delete_all_messages) {
 
-//                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
-//                        @Override
-//                        public void onComplete(@NonNull Task<Void> task) {
-//                            if (!task.isSuccessful()) {
-//                                Toast.makeText(ChatActivity.this, R.string.delete_all_messages_failed, Toast.LENGTH_SHORT).show();
-//                            } else if (task.isSuccessful()) {
-//                                messagesAdapter.removeAllMessages();
-//                                deleteAllMessagesFromDatabase();
-//                            }
-//                        }
-//                    });
+
+                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (!task.isSuccessful()) {
+                                Toast.makeText(ChatActivity.this, R.string.delete_all_messages_failed, Toast.LENGTH_SHORT).show();
+                            } else if (task.isSuccessful()) {
+                                messagesAdapter.removeAllMessages();
+                                deleteAllMessagesFromDatabase();
+                            }
+                        }
+                    });
                     deleteAllMessagesFromDatabase();
                     return true;
                 }
@@ -231,7 +232,10 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
                 } else {
                     Log.d(TAG, "onDataChange: latestMessageTimestamp: "+getLatestMessageTimestampForThisChat());
                     mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(loadAllMessagesSingleListener);
-                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).startAfter("1632749238172").addChildEventListener(childEventListener);
+                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID)
+                            .orderByKey()
+                            .startAfter(String.valueOf(getLatestMessageTimestampForThisChat()))
+                            .addChildEventListener(childEventListener);
                 }
             }
 
@@ -301,31 +305,24 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
 
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
+                Log.d(TAG, "onChildChanged: ");
             }
 
             @Override
             public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-
+                Log.d(TAG, "onChildRemoved: ");
             }
 
             @Override
             public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
+                Log.d(TAG, "onChildMoved: ");
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-
+                Log.d(TAG, "onCancelled: ");
             }
         };
-//        String latestMessageTimestamp = getLatestMessageTimestampForThisChat();
-//        Log.d(TAG, "onCreate: latestMessageTimestamp: " + latestMessageTimestamp);
-//        if (!latestMessageTimestamp.equals("0")) {
-//            mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).startAt("1632740614546", "timestamp").addChildEventListener(childEventListener);
-//        } else {
-//            mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).addChildEventListener(childEventListener);
-//        }
         mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).addValueEventListener(loadAllMessagesSingleListener);
     }
 
