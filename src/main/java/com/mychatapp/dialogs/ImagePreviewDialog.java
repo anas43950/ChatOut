@@ -49,7 +49,6 @@ public class ImagePreviewDialog extends DialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        ExecutorService executor= Executors.newFixedThreadPool(1);
 
 
 //        String timestamp = String.valueOf(realDate.getTime());
@@ -87,31 +86,26 @@ public class ImagePreviewDialog extends DialogFragment {
 
         view.findViewById(R.id.cancel_send_image_button).setOnClickListener(l -> getDialog().dismiss());
 
-        view.findViewById(R.id.perform_send_image_button).setOnClickListener(l -> executor.execute(() -> {
-            try {
-                String timestamp= String.valueOf(MainActivity.getCurrentTimestamp());
-                storageReference.child(currentUserUid+timestamp).putBytes(downsizedImageBytes).addOnSuccessListener(taskSnapshot -> {
-                    if (taskSnapshot.getMetadata() != null) {
-                        if (taskSnapshot.getMetadata().getReference() != null) {
-                            Task<Uri> result = taskSnapshot.getStorage().getDownloadUrl();
-                            result.addOnSuccessListener(uri -> {
-                                getDialog().dismiss();
+        view.findViewById(R.id.perform_send_image_button).setOnClickListener(v -> {
+            long timestamp = System.currentTimeMillis();
+            storageReference.child(currentUserUid + timestamp).putBytes(downsizedImageBytes).addOnSuccessListener(taskSnapshot -> {
+                if (taskSnapshot.getMetadata() != null) {
+                    if (taskSnapshot.getMetadata().getReference() != null) {
+                        Task<Uri> result = taskSnapshot.getStorage().getDownloadUrl();
+                        result.addOnSuccessListener(uri -> {
+                            getDialog().dismiss();
 
-                                String downloadUrl = uri.toString();
+                            String downloadUrl = uri.toString();
 
-                                Message message = new Message(null, currentUserUid, timestamp, downloadUrl);
-                                messagesReference.child(currentUserUid).child(receiverUID).child(timestamp).setValue(message);
-                                messagesReference.child(receiverUID).child(currentUserUid).child(timestamp).setValue(message);
+                            Message message = new Message(null, currentUserUid, timestamp, downloadUrl);
+                            messagesReference.child(currentUserUid).child(receiverUID).child(String.valueOf(timestamp)).setValue(message);
+                            messagesReference.child(receiverUID).child(currentUserUid).child(String.valueOf(timestamp)).setValue(message);
 
-                            });
-                        }
+                        });
                     }
-                });
-            } catch (IOException e) {
-                Toast.makeText(getContext(), R.string.send_message_failed, Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
-        }));
+                }
+            });
+        });
 
         return view;
     }

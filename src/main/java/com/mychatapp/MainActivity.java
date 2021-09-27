@@ -36,8 +36,7 @@ import com.mychatapp.models.Contact;
 import com.mychatapp.recyclerviewutils.ContactsAdapter;
 
 
-import org.apache.commons.net.ntp.NTPUDPClient;
-import org.apache.commons.net.ntp.TimeInfo;
+
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -88,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
                     if (task.getResult().getValue() != null) {
                         Contact contact = task.getResult().getValue(Contact.class);
                         executor.execute(() -> mDb.contactsDao().insertContact(contact));
-
                     }
                 });
 
@@ -165,15 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public static long getCurrentTimestamp() throws IOException {
-        String TIME_SERVER = "time-a.nist.gov";
-        NTPUDPClient timeClient = new NTPUDPClient();
-        InetAddress inetAddress = InetAddress.getByName(TIME_SERVER);
-        TimeInfo timeInfo = timeClient.getTime(inetAddress);
-        long returnTime = timeInfo.getMessage().getReceiveTimeStamp().getTime();
-        Date time = new Date(returnTime);
-        return time.getTime();
-    }
+
 
 
 }

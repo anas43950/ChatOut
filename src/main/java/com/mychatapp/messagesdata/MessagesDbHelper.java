@@ -20,8 +20,11 @@ public class MessagesDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String SQL_CREATE_MESSAGES_TABLE="CREATE TABLE receiver"+receiverUID+" ("+MessageDetails.TIMESTAMP_ID
-                +" INTEGER PRIMARY KEY, "+ MessageDetails.COLUMN_MESSAGE+" TEXT,"+MessageDetails.COLUMN_IMAGE_URI+" TEXT, "
+        String SQL_CREATE_MESSAGES_TABLE="CREATE TABLE receiver"+receiverUID+" " +
+                "("+MessageDetails.TIMESTAMP_ID
+                +" INTEGER PRIMARY KEY, "
+                + MessageDetails.COLUMN_MESSAGE+" TEXT,"
+                +MessageDetails.COLUMN_IMAGE_URI+" TEXT, "
                 +MessageDetails.COLUMN_SENDER_UID+" TEXT);";
         db.execSQL(SQL_CREATE_MESSAGES_TABLE);
         Log.d(TAG, "onCreate: Database created");

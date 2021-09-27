@@ -27,6 +27,9 @@ public class DeleteDialog extends DialogFragment {
     private FirebaseAuth mAuth;
     private static final String TAG = DeleteDialog.class.getSimpleName();
     private String currentUserUID;
+    private Listener mListener;
+    public static final int DELETE_MESSAGE_CONFIRMED = 1;
+
 
     @Nullable
     @Override
@@ -47,22 +50,15 @@ public class DeleteDialog extends DialogFragment {
         });
 //We are using this dialog for two purposes hence we have to specify for which purpose this dialog has been created
         if (getTag().equals("DeleteMessageDialog")) {
-            String timestamp = bundle.getString(MessagesAdapter.TIMESTAMP_KEY, "");
-            String receiverUID = bundle.getString(MessagesAdapter.CONVERSATION_DATABASE_PATH, "");
-            mMessageReference = mDatabase.getReference("messages").child(currentUserUID).child(receiverUID).child(timestamp);
-            deleteButton.setOnClickListener(v -> {
-                dialog.dismiss();
 
-                mMessageReference.removeValue().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        Toast.makeText(context, R.string.delete_message_successful, Toast.LENGTH_SHORT).show();
+            deleteButton.setOnClickListener(v ->
+                    {
+                        dialog.dismiss();
+                        if (mListener != null) {
+                            mListener.onConfirmClicked(DELETE_MESSAGE_CONFIRMED);
+                        }
                     }
-                    if (!task.isSuccessful()) {
-                        Toast.makeText(context, R.string.delete_message_failed, Toast.LENGTH_SHORT).show();
-
-                    }
-                });
-            });
+            );
         } else if (getTag().equals("DeleteUserDialog")) {
             ((TextView) view.findViewById(R.id.delete_dialog_tv)).setText(R.string.delete_user);
 
@@ -127,4 +123,11 @@ public class DeleteDialog extends DialogFragment {
 
     }
 
+    public interface Listener {
+        void onConfirmClicked(int val);
+    }
+
+    public void setListener(Listener listener) {
+        mListener = listener;
+    }
 }

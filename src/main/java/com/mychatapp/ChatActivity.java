@@ -41,6 +41,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.mychatapp.dialogs.DeleteDialog;
 import com.mychatapp.dialogs.ImagePreviewDialog;
 import com.mychatapp.messagesdata.MessageContract.MessageDetails;
 import com.mychatapp.messagesdata.MessagesDbHelper;
@@ -48,32 +49,30 @@ import com.mychatapp.models.Message;
 import com.mychatapp.recyclerviewutils.ContactsAdapter;
 import com.mychatapp.recyclerviewutils.MessagesAdapter;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-
-import java.util.List;
-
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class ChatActivity extends AppCompatActivity {
+public class ChatActivity extends AppCompatActivity implements MessagesAdapter.ClickListener, DeleteDialog.Listener {
     // Firebase instance variables
     private FirebaseDatabase mDatabase;
-    private DatabaseReference mMessagesDatabaseReference, mContactNameReference, mSenderContactsReference, mReceiverContactsReference;
-    private ChildEventListener messagesListener;
-    private ValueEventListener singleValueMessageListener;
+    private DatabaseReference mMessagesDatabaseReference, mSenderContactsReference, mReceiverContactsReference;
+    private ValueEventListener addContactSingleListener, loadAllMessagesSingleListener;
     private FirebaseAuth mFirebaseAuth;
-    public String currentUserUID, receiverUID,receiverName;
+    public String currentUserUID, receiverUID, receiverName;
     private static final String TAG = ChatActivity.class.getSimpleName();
     public static final String IMAGE_PATH_KEY = "image-path-key";
     public static final String IMAGE_URI_KEY = "image-uri-key";
     public static final String RECEIVER_UID_KEY = "image-uri-key";
     private String path;
+    private long messageTimestamp;
     private MessagesDbHelper messagesDbHelper;
+    private ArrayList<Message> messages;
+    private MessagesAdapter messagesAdapter;
+    private ChildEventListener childEventListener;
 
 
     @Override
@@ -82,8 +81,9 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
         Intent intentThatLaunchedActivity = getIntent();
         receiverUID = intentThatLaunchedActivity.getStringExtra(ContactsAdapter.receiverUIDKey);
-        receiverName=intentThatLaunchedActivity.getStringExtra(ContactsAdapter.nameKey);
-        ExecutorService executor = Executors.newFixedThreadPool(1);
+        receiverName = intentThatLaunchedActivity.getStringExtra(ContactsAdapter.nameKey);
+        ((TextView) findViewById(R.id.chat_name_tv)).setText(receiverName);
+
         //Initializing local database
         messagesDbHelper = new MessagesDbHelper(this, receiverUID);
         //Initializing firebase variables
@@ -91,11 +91,10 @@ public class ChatActivity extends AppCompatActivity {
         mFirebaseAuth = FirebaseAuth.getInstance();
         currentUserUID = mFirebaseAuth.getCurrentUser().getUid();
         mMessagesDatabaseReference = mDatabase.getReference("messages");
-        mContactNameReference = mDatabase.getReference("contacts").child(receiverUID);
         mSenderContactsReference = mDatabase.getReference("contactList").child(currentUserUID).child(receiverUID);
         mReceiverContactsReference = mDatabase.getReference("contactList").child(receiverUID).child(currentUserUID);
 
-
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         RecyclerView messagesRV = findViewById(R.id.messagesRV);
         MaterialButton sendButton = findViewById(R.id.send_button);
         sendButton.setEnabled(false);
@@ -105,8 +104,24 @@ public class ChatActivity extends AppCompatActivity {
         messagesRV.getRecycledViewPool().setMaxRecycledViews(0, 0);
 
 
-        MessagesAdapter messagesAdapter = new MessagesAdapter(this, receiverUID,mLinearLayoutManager);
-        messagesAdapter.setMessages((ArrayList<Message>) loadAllMessagesOfThisChat());
+        messagesAdapter = new MessagesAdapter(this, receiverUID, mLinearLayoutManager);
+        messagesAdapter.setClickListener(this);
+        messages = loadAllMessagesOfThisChat();
+        messagesAdapter.setMessages(messages);
+        messagesRV.setAdapter(messagesAdapter);
+        messagesRV.setLayoutManager(mLinearLayoutManager);
+
+        //On layout change listener for scrolling to bottom after keyboard popup
+        messagesRV.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (bottom < oldBottom) {
+                messagesRV.postDelayed(() -> {
+                    if (messagesAdapter.getItemCount() != 0) {
+                        messagesRV.smoothScrollToPosition(messagesAdapter.getItemCount() - 1);
+                    }
+                }, 10);
+            }
+        });
+
 
         //setting activity result launcher for image picker button
         ActivityResultLauncher<Intent> getImageUri = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
@@ -136,9 +151,7 @@ public class ChatActivity extends AppCompatActivity {
 
 
         //setting up menu
-        findViewById(R.id.chat_activity_back_button).setOnClickListener(l -> {
-            finish();
-        });
+        findViewById(R.id.chat_activity_back_button).setOnClickListener(l -> finish());
         MaterialButton imagePickerButton = findViewById(R.id.image_picker_button);
         imagePickerButton.setOnClickListener(l -> {
             if (isNetworkConnected()) {
@@ -150,6 +163,7 @@ public class ChatActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, R.string.no_internet, Toast.LENGTH_SHORT).show();
             }
+            Log.d(TAG, "onCreate: timestamp" + System.currentTimeMillis());
         });
         MaterialButton chatMenu = findViewById(R.id.chat_activity_menu_button);
         chatMenu.setOnClickListener(l -> {
@@ -158,14 +172,19 @@ public class ChatActivity extends AppCompatActivity {
             popupMenu.setOnMenuItemClickListener(item -> {
                 int item_id = item.getItemId();
                 if (item_id == R.id.delete_all_messages) {
-                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
-                        @Override
-                        public void onComplete(@NonNull Task<Void> task) {
-                            if (!task.isSuccessful()) {
-                                Toast.makeText(ChatActivity.this, R.string.delete_all_messages_failed, Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
+
+//                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+//                        @Override
+//                        public void onComplete(@NonNull Task<Void> task) {
+//                            if (!task.isSuccessful()) {
+//                                Toast.makeText(ChatActivity.this, R.string.delete_all_messages_failed, Toast.LENGTH_SHORT).show();
+//                            } else if (task.isSuccessful()) {
+//                                messagesAdapter.removeAllMessages();
+//                                deleteAllMessagesFromDatabase();
+//                            }
+//                        }
+//                    });
+                    deleteAllMessagesFromDatabase();
                     return true;
                 }
                 return false;
@@ -173,19 +192,46 @@ public class ChatActivity extends AppCompatActivity {
             popupMenu.show();
         });
 
-
-        singleValueMessageListener = new ValueEventListener() {
+        //Single value even listener for adding contact in contact list
+        addContactSingleListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.getChildrenCount() == 1) {
-                    mSenderContactsReference.setValue(receiverUID);
-                    mReceiverContactsReference.setValue(currentUserUID);
+                mSenderContactsReference.get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        String contactUID = (String) task.getResult().getValue();
+                        if (contactUID == null) {
+                            mSenderContactsReference.setValue(receiverUID);
+                            mReceiverContactsReference.setValue(currentUserUID);
+                            mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(addContactSingleListener);
+                        } else {
+                            mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(addContactSingleListener);
 
-                } else if (snapshot.getChildrenCount() > 1) {
+                        }
+                    }
+                });
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        };
+        //Single event listener for downloading all previous messages of this chat
+        loadAllMessagesSingleListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.getChildrenCount() != 0 && getLatestMessageTimestampForThisChat().equals("0")) {
+                    for (DataSnapshot ds : snapshot.getChildren()) {
+                        Message message = ds.getValue(Message.class);
+                        addMessageToDatabase(message);
+                        messagesAdapter.addMessage(message);
+                    }
 
                 } else {
-                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(singleValueMessageListener);
-
+                    Log.d(TAG, "onDataChange: latestMessageTimestamp: "+getLatestMessageTimestampForThisChat());
+                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(loadAllMessagesSingleListener);
+                    mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).startAfter("1632749238172").addChildEventListener(childEventListener);
                 }
             }
 
@@ -196,8 +242,11 @@ public class ChatActivity extends AppCompatActivity {
         };
 
 
-        messagesRV.setAdapter(messagesAdapter);
-        messagesRV.setLayoutManager(mLinearLayoutManager);
+
+
+
+
+        //Edit text change listener
         messageEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -215,82 +264,71 @@ public class ChatActivity extends AppCompatActivity {
 
             }
         });
-        sendButton.setOnClickListener(l -> executor.execute(() -> {
-            try {
-                String timestamp = String.valueOf(MainActivity.getCurrentTimestamp());
-                Message message = new Message(messageEditText.getText().toString(), currentUserUID, timestamp, null);
 
-                mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).child(timestamp).setValue(message).addOnSuccessListener(unused -> mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).addValueEventListener(singleValueMessageListener));
-                mMessagesDatabaseReference.child(receiverUID).child(currentUserUID).child(timestamp).setValue(message);
 
-            } catch (IOException e) {
-                Toast.makeText(ChatActivity.this, R.string.send_message_failed, Toast.LENGTH_SHORT).show();
-            }
-            runOnUiThread(() -> {
-                messageEditText.setText("");
-                sendButton.setEnabled(false);
 
+        sendButton.setOnClickListener(v -> {
+            long timestamp = System.currentTimeMillis();
+            Message message = new Message(messageEditText.getText().toString(), currentUserUID, timestamp, null);
+            messagesAdapter.addMessage(message);
+            messageEditText.setText(" ");
+            sendButton.setEnabled(false);
+
+            mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).child(String.valueOf(timestamp)).setValue(message).addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    if (task.isSuccessful()) {
+                        mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).addValueEventListener(addContactSingleListener);
+                        mMessagesDatabaseReference.child(receiverUID).child(currentUserUID).child(String.valueOf(timestamp)).setValue(message);
+                    } else if (!task.isSuccessful()) {
+                        Log.d(TAG, "onComplete: Message send failed: " + task.getException());
+                        Toast.makeText(ChatActivity.this, R.string.send_message_failed, Toast.LENGTH_SHORT).show();
+                        messagesAdapter.removeMessage(timestamp);
+                    }
+                }
             });
-        }));
-        messagesListener = new ChildEventListener() {
-            @Override
-            public void onChildAdded(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
 
+        });
+        childEventListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 Message message = snapshot.getValue(Message.class);
-                SQLiteDatabase mDb = messagesDbHelper.getWritableDatabase();
-                ContentValues values = new ContentValues();
-                values.put(MessageDetails.TIMESTAMP_ID, message.getTimestamp());
-                values.put(MessageDetails.COLUMN_MESSAGE, message.getMessage());
-                values.put(MessageDetails.COLUMN_IMAGE_URI, message.getImageUrl());
-                values.put(MessageDetails.COLUMN_SENDER_UID, message.getUserID());
-                long rowId = mDb.insert("receiver" + receiverUID, null, values);
-                Toast.makeText(ChatActivity.this, "Row saved with Id: " + rowId, Toast.LENGTH_SHORT).show();
-//                messagesRV.scrollToPosition(messagesAdapter.getItemCount() - 1);
-
-
-            }
-
-            @Override
-            public void onChildChanged(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
-
-
-            }
-
-            @Override
-            public void onChildRemoved(@NonNull @NotNull DataSnapshot snapshot) {
-                if (snapshot.getChildrenCount() > 1) {
-//                    messages.clear();
-                    messagesAdapter.notifyDataSetChanged();
-                } else {
-                    Message message = snapshot.getValue(Message.class);
-                    messagesAdapter.removeMessage(message);
-                    messagesRV.scrollToPosition(messagesAdapter.getItemCount() - 1);
+                addMessageToDatabase(message);
+                if (!message.getUserID().equals(currentUserUID)) {
+                    messagesAdapter.addMessage(message);
                 }
             }
 
             @Override
-            public void onChildMoved(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
             }
 
             @Override
-            public void onCancelled(@NonNull @NotNull DatabaseError error) {
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
 
             }
         };
-        mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).startAfter("1631764331992").addChildEventListener(messagesListener);
-        ((TextView) findViewById(R.id.chat_name_tv)).setText(receiverName);
-
-
-
+//        String latestMessageTimestamp = getLatestMessageTimestampForThisChat();
+//        Log.d(TAG, "onCreate: latestMessageTimestamp: " + latestMessageTimestamp);
+//        if (!latestMessageTimestamp.equals("0")) {
+//            mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).startAt("1632740614546", "timestamp").addChildEventListener(childEventListener);
+//        } else {
+//            mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).addChildEventListener(childEventListener);
+//        }
+        mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).addValueEventListener(loadAllMessagesSingleListener);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(messagesListener);
-
-    }
 
     //Method to check whether the permission is granted or not
     public boolean isStoragePermissionGranted() {
@@ -322,8 +360,9 @@ public class ChatActivity extends AppCompatActivity {
         return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
     }
 
-    private List<Message> loadAllMessagesOfThisChat() {
-        List<Message> messages = new ArrayList<>();
+    private ArrayList<Message> loadAllMessagesOfThisChat() {
+
+        ArrayList<Message> messages = new ArrayList<>();
 
         SQLiteDatabase mDb = messagesDbHelper.getReadableDatabase();
         String[] projection = {
@@ -336,18 +375,109 @@ public class ChatActivity extends AppCompatActivity {
         int timestampColumnIndex = cursor.getColumnIndex(MessageDetails.TIMESTAMP_ID);
         int imageURIColumnIndex = cursor.getColumnIndex(MessageDetails.COLUMN_IMAGE_URI);
         int senderUIDColumnIndex = cursor.getColumnIndex(MessageDetails.COLUMN_SENDER_UID);
-        while (cursor.moveToNext()) {
-            Message message = new Message();
-            message.setMessage(cursor.getString(messageColumnIndex));
-            message.setImageUrl(cursor.getString(imageURIColumnIndex));
-            message.setTimestamp(String.valueOf(cursor.getInt(timestampColumnIndex)));
-            message.setUserID(cursor.getString(senderUIDColumnIndex));
-            messages.add(message);
-
+        try {
+            while (cursor.moveToNext()) {
+                Message message = new Message();
+                message.setMessage(cursor.getString(messageColumnIndex));
+                message.setImageUrl(cursor.getString(imageURIColumnIndex));
+                message.setTimestamp(cursor.getLong(timestampColumnIndex));
+                message.setUserID(cursor.getString(senderUIDColumnIndex));
+                messages.add(message);
+            }
+        } finally {
+            cursor.close();
+            mDb.close();
         }
-        cursor.close();
-        mDb.close();
+
         return messages;
     }
+
+    //Method to add message to database once it is added to firebase
+    private void addMessageToDatabase(Message message) {
+        SQLiteDatabase mDb = messagesDbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(MessageDetails.TIMESTAMP_ID, message.getTimestamp());
+        values.put(MessageDetails.COLUMN_MESSAGE, message.getMessage());
+        values.put(MessageDetails.COLUMN_IMAGE_URI, message.getImageUrl());
+        values.put(MessageDetails.COLUMN_SENDER_UID, message.getUserID());
+        long rowId = mDb.insert("receiver" + receiverUID, null, values);
+        Log.d(TAG, "addMessageToDatabase: receiver" + receiverUID);
+        Toast.makeText(ChatActivity.this, "Row saved with Id: " + rowId, Toast.LENGTH_SHORT).show();
+        mDb.close();
+//        if (rowId != -1 && !message.getUserID().equals(currentUserUID)) {
+//            messagesAdapter.addMessage(message);
+//        }
+
+    }
+
+
+    private void deleteAllMessagesFromDatabase() {
+        SQLiteDatabase mDb = messagesDbHelper.getWritableDatabase();
+        mDb.delete("receiver" + receiverUID, null, null);
+        mDb.close();
+    }
+
+
+    @Override
+    public void onItemLongClick(int position) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        DeleteDialog deleteDialog = new DeleteDialog();
+        deleteDialog.setListener(ChatActivity.this);
+        deleteDialog.show(fragmentManager, "DeleteMessageDialog");
+        messageTimestamp = messages.get(position).getTimestamp();
+        Log.d(TAG, "onItemLongClick: Item no. " + position + " and timestamp: " + messages.get(position).getTimestamp());
+
+    }
+
+    @Override
+    public void onConfirmClicked(int val) {
+        mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).child(Long.toString(messageTimestamp)).removeValue().addOnCompleteListener(task -> {
+
+            if (task.isSuccessful()) {
+                deleteMessageFromDatabase(messageTimestamp);
+
+            } else {
+                Log.d(TAG, "onConfirmClicked: " + task.getException());
+            }
+        });
+
+    }
+
+    //Method to delete message from database once it is deleted from firebase
+    private void deleteMessageFromDatabase(long messageTimestamp) {
+        String tableName = "receiver" + receiverUID;
+        String whereClause = MessageDetails.TIMESTAMP_ID + "=?";
+        MessagesDbHelper messagesDbHelper = new MessagesDbHelper(this, receiverUID);
+        SQLiteDatabase mDb = messagesDbHelper.getWritableDatabase();
+        int rowsAffected = mDb.delete(tableName, whereClause, new String[]{Long.toString(messageTimestamp)});
+        if (rowsAffected == 1) {
+            messagesAdapter.removeMessage(messageTimestamp);
+        }
+        mDb.close();
+    }
+
+    private String getLatestMessageTimestampForThisChat() {
+        MessagesDbHelper messagesDbHelper = new MessagesDbHelper(this, receiverUID);
+        SQLiteDatabase mDb = messagesDbHelper.getReadableDatabase();
+        Cursor cursor = mDb.query("receiver" + receiverUID,
+                null,
+                null,
+                null,
+                null,
+                null,
+                MessageDetails.TIMESTAMP_ID + " DESC",
+                "1");
+        int timestampColumnIndex = cursor.getColumnIndex(MessageDetails.TIMESTAMP_ID);
+        String latestMessageTimestamp = "0";
+        try {
+            while (cursor.moveToNext()) {
+                latestMessageTimestamp = String.valueOf(cursor.getLong(timestampColumnIndex));
+            }
+        } finally {
+            mDb.close();
+        }
+        return latestMessageTimestamp;
+    }
+
 
 }

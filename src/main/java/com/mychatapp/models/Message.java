@@ -5,10 +5,10 @@ public class Message {
 
     private String userID;
     private String message;
-    private String timestamp;
+    private long timestamp;
     private String imageUrl;
 
-    public Message(String message, String userID, String timestamp, String imageUrl) {
+    public Message(String message, String userID, long timestamp, String imageUrl) {
         this.message = message;
         this.userID = userID;
         this.timestamp = timestamp;
@@ -27,7 +27,7 @@ public class Message {
         return userID;
     }
 
-    public String getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 
@@ -43,7 +43,7 @@ public class Message {
         this.userID = userID;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 

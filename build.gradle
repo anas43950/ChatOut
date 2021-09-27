@@ -55,8 +55,6 @@ dependencies {
     implementation 'com.google.firebase:firebase-storage'
     //fragment dependency
     implementation "androidx.fragment:fragment:$fragment_version"
-    //Library to get real time regardless of device time
-    implementation 'commons-net:commons-net:3.6'
 
     //Multi dex library
     implementation "androidx.multidex:multidex:2.0.1"
