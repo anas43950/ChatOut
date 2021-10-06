@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mychatapp">
+    package="com.chatout">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
 
     <application
@@ -12,14 +12,18 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
-        android:usesCleartextTraffic="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MyChatApp">
-        <activity android:name=".launchTimeActivities.LoginActivity" />
-        <activity android:name=".launchTimeActivities.SignupActivity" />
+        android:theme="@style/Theme.MyChatApp"
+        android:usesCleartextTraffic="true">
         <activity
-            android:name=".launchTimeActivities.SplashActivity"
+            android:name="com.chatout.launchTimeActivities.LoginActivity"
+            android:noHistory="true" />
+        <activity
+            android:name="com.chatout.launchTimeActivities.SignupActivity"
+            android:noHistory="true" />
+        <activity
+            android:name="com.chatout.launchTimeActivities.SplashActivity"
             android:noHistory="true"
             android:theme="@style/SplashScreenTheme">
             <intent-filter>
@@ -28,8 +32,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ChatActivity" android:theme="@style/ChatActivityTheme"/>
-        <activity android:name=".MainActivity" >
+        <activity
+            android:name="com.chatout.ChatActivity"
+            android:theme="@style/ChatActivityTheme" />
+        <activity android:name="com.chatout.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
