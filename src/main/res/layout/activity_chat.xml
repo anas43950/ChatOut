@@ -4,23 +4,28 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@drawable/chat_bg"
+    >
 
 
-    <LinearLayout
-        android:id="@+id/chat_activity_toolbar"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/chat_activity_header"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@color/colorPrimary"
+        android:layout_height="60dp"
+        android:background="@color/primaryColor"
         android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/chat_activity_back_button"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="center"
-            android:background="@drawable/ic_back"
-            app:backgroundTint="@color/white" />
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/chat_header_ripple"
+            android:src="@drawable/ic_back"
+            app:backgroundTint="#00000000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/chat_name_tv"
@@ -28,61 +33,80 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:paddingStart="10dp"
-            android:textColor="@color/white"
-            android:textSize="24sp"
+            android:textColor="@android:color/white"
+            android:textSize="28sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/chat_activity_menu_button"
+            app:layout_constraintStart_toEndOf="@+id/chat_activity_back_button"
             tools:text="Hello World" />
 
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/chat_activity_menu_button"
-            android:layout_width="30dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center_vertical"
-            android:layout_marginEnd="10dp"
-            android:background="@drawable/ic_menu"
-            app:backgroundTint="@color/white" />
-    </LinearLayout>
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/chat_header_ripple"
+            android:src="@drawable/ic_menu"
+            app:backgroundTint="#00000000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/messagesRV"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/tool_bar"
-        android:layout_below="@id/chat_activity_toolbar" />
+        android:layout_above="@id/chat_activity_footer"
+        android:layout_below="@id/chat_activity_header" />
 
-    <LinearLayout
-        android:id="@+id/tool_bar"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/chat_activity_footer"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
+        android:layout_height="60dp"
+        android:clipToPadding="false"
         android:layout_alignParentBottom="true"
+        android:layout_marginEnd="0dp"
         android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:layout_gravity="center"
+        <ImageButton
             android:id="@+id/image_picker_button"
-            android:background="@drawable/ic_image"
-            app:backgroundTint="@color/colorPrimary" />
+            android:layout_width="50dp"
+            android:layout_height="60dp"
+            app:backgroundTint="#00000000"
+            android:src="@drawable/ic_image"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <EditText
             android:id="@+id/messageEditText"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
+            android:layout_height="45dp"
+            android:layout_weight="1"
+            android:background="@drawable/type_field_bg"
+            android:hint="Message"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/send_button"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toEndOf="@+id/image_picker_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.533" />
 
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/send_button"
-            android:layout_width="32dp"
-            android:layout_height="38dp"
-            android:layout_gravity="center"
-            android:background="@drawable/ic_send"
-            app:backgroundTint="@color/colorPrimary"
-            android:layout_marginEnd="4dp"/>
+            android:layout_width="50dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_send"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:backgroundTint="#00000000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 
 </RelativeLayout>

@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
@@ -36,7 +37,7 @@ public class SignupActivity extends AppCompatActivity {
     private String name, username, email, password;
     private FirebaseUser mUser;
     private FirebaseDatabase mDatabase;
-    private DatabaseReference  mUsernameReference, mUIDReference;
+    private DatabaseReference mUsernameReference, mUIDReference;
     private TextView accountNotVerifiedSignupTV, emailTV, passwordTV;
     private MaterialButton signUpButton;
     private EditText signupPasswordET, signupEmailET;
@@ -106,7 +107,6 @@ public class SignupActivity extends AppCompatActivity {
                 return;
             }
 
-
             signUpButton.setClickable(false);
             mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
@@ -118,6 +118,9 @@ public class SignupActivity extends AppCompatActivity {
 
                 } else if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
                     Toast.makeText(SignupActivity.this, "Please enter a valid email", Toast.LENGTH_SHORT).show();
+                    signUpButton.setClickable(true);
+                } else if (task.getException() instanceof FirebaseNetworkException) {
+                    Toast.makeText(SignupActivity.this, R.string.no_internet, Toast.LENGTH_SHORT).show();
                     signUpButton.setClickable(true);
                 }
 
@@ -227,7 +230,7 @@ public class SignupActivity extends AppCompatActivity {
 
         mUsernameReference = mDatabase.getReference("usernames").child(username);
         mUIDReference = mDatabase.getReference("contacts").child(currentUserUID);
-        Contact currentUserContact = new Contact(name, username,currentUserUID);
+        Contact currentUserContact = new Contact(name, username, currentUserUID);
         //uploading username and email relation
         mUsernameReference.setValue(currentUserUID).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {

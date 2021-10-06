@@ -1,16 +1,20 @@
 package com.mychatapp.dialogs;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.media.Image;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -18,6 +22,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
 import com.github.chrisbanes.photoview.PhotoView;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
@@ -83,10 +88,14 @@ public class ImagePreviewDialog extends DialogFragment {
             ioEx.printStackTrace();
         }
 
+        ImageButton cancelSendButton=view.findViewById(R.id.cancel_send_image_button);
+        cancelSendButton.setOnClickListener(l -> getDialog().dismiss());
 
-        view.findViewById(R.id.cancel_send_image_button).setOnClickListener(l -> getDialog().dismiss());
+    ImageButton sendImageButton=view.findViewById(R.id.perform_send_image_button);
+    sendImageButton.setOnClickListener(v -> {
 
-        view.findViewById(R.id.perform_send_image_button).setOnClickListener(v -> {
+        cancelSendButton.setEnabled(false);
+        sendImageButton.setEnabled(false);
             long timestamp = System.currentTimeMillis();
             storageReference.child(currentUserUid + timestamp).putBytes(downsizedImageBytes).addOnSuccessListener(taskSnapshot -> {
                 if (taskSnapshot.getMetadata() != null) {
@@ -96,10 +105,19 @@ public class ImagePreviewDialog extends DialogFragment {
                             getDialog().dismiss();
 
                             String downloadUrl = uri.toString();
-
-                            Message message = new Message(null, currentUserUid, timestamp, downloadUrl);
-                            messagesReference.child(currentUserUid).child(receiverUID).child(String.valueOf(timestamp)).setValue(message);
-                            messagesReference.child(receiverUID).child(currentUserUid).child(String.valueOf(timestamp)).setValue(message);
+                            long timestamp1 = System.currentTimeMillis();
+                            Message message = new Message(null, currentUserUid, timestamp1, downloadUrl);
+                            messagesReference.child(currentUserUid).child(receiverUID).child(String.valueOf(timestamp1)).setValue(message).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if(task.isSuccessful()){
+                                        Log.d(TAG, "onComplete: Image Sent and url updated");
+                                    }else{
+                                        Log.d(TAG, "onComplete: Url updation failed: "+task.getException().toString());
+                                    }
+                                }
+                            });
+                            messagesReference.child(receiverUID).child(currentUserUid).child(String.valueOf(timestamp1)).setValue(message);
 
                         });
                     }
@@ -131,8 +149,9 @@ public class ImagePreviewDialog extends DialogFragment {
         // 2. Instantiate the downsized image content as a byte[]
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-        byte[] downsizedImageBytes = baos.toByteArray();
 
-        return downsizedImageBytes;
+        return baos.toByteArray();
+
     }
+
 }

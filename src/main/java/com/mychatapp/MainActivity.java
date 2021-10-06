@@ -23,7 +23,11 @@ import android.widget.Toast;
 import com.firebase.ui.auth.AuthUI;
 
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -38,11 +42,6 @@ import com.mychatapp.models.Contact;
 import com.mychatapp.recyclerviewutils.ContactsAdapter;
 
 
-
-
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -75,6 +74,11 @@ public class MainActivity extends AppCompatActivity {
         contactsAdapter = new ContactsAdapter(this);
         contactsRV.setAdapter(contactsAdapter);
         contactsRV.setLayoutManager(new LinearLayoutManager(this));
+        findViewById(R.id.search_fab).setOnClickListener(l -> {
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            SearchNewUserDialog searchNewUserDialog = new SearchNewUserDialog();
+            searchNewUserDialog.show(fragmentManager, "SearchNewUserDialog");
+        });
 
         mDatabase = FirebaseDatabase.getInstance();
         mAuth = FirebaseAuth.getInstance();
@@ -107,9 +111,9 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Contact contact = task.getResult().getValue(Contact.class);
                         executor.execute(() -> mDb.contactsDao().deleteContactById(contact.getMUserID()));
-                        MessagesDbHelper messagesDbHelper=new MessagesDbHelper(MainActivity.this,deletedContactUID);
-                        SQLiteDatabase mDb=messagesDbHelper.getWritableDatabase();
-                        mDb.execSQL("DROP TABLE IF EXISTS receiver"+deletedContactUID);
+                        MessagesDbHelper messagesDbHelper = new MessagesDbHelper(MainActivity.this, deletedContactUID);
+                        SQLiteDatabase mDb = messagesDbHelper.getWritableDatabase();
+                        mDb.delete("receiver" + deletedContactUID, null, null);
                         mDb.close();
                     }
                 });
@@ -131,15 +135,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public boolean isNetworkConnected() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.activity_main_menu, menu);
+        inflater.inflate(R.menu.main_activity_menu, menu);
 
 
         return true;
@@ -155,16 +155,8 @@ public class MainActivity extends AppCompatActivity {
             getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit()
                     .putBoolean("isFirstRun", true).apply();
             startActivity(new Intent(MainActivity.this, SplashActivity.class));
-        } else if (item.getItemId() == R.id.search_by_username) {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            SearchNewUserDialog searchNewUserDialog = new SearchNewUserDialog();
-            searchNewUserDialog.show(fragmentManager, "SearchNewUserDialog");
-
-        } else if (item.getItemId() == R.id.delete_all_users) {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            DeleteDialog deleteDialog = new DeleteDialog();
-            deleteDialog.show(fragmentManager, "DeleteAllUsersDialog");
         }
+
         return super.onOptionsItemSelected(item);
 
     }

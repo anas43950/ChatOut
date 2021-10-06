@@ -15,7 +15,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -38,6 +40,7 @@ public class LoginActivity extends AppCompatActivity {
     private String emailForFirebase;
     private String currentUserUID;
     private static final String TAG = LoginActivity.class.getSimpleName();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,21 +61,36 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(l -> {
             email = loginEmailET.getText().toString();
             password = loginPasswordET.getText().toString();
+            if (TextUtils.isEmpty(email)) {
+                Toast.makeText(LoginActivity.this, "Please enter your email", Toast.LENGTH_SHORT).show();
+                return;
+            }
             loginEmailET.setEnabled(false);
             loginPasswordET.setEnabled(false);
             loginButton.setClickable(false);
+
 
             mAuth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this, task -> {
 
                         if (!task.isSuccessful()) {
-                            Log.d(TAG, task.getException().toString());
-                            Toast.makeText(LoginActivity.this, "Failed to login , please try again", Toast.LENGTH_SHORT).show();
-
+                            if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                                Toast.makeText(LoginActivity.this, "Wrong password", Toast.LENGTH_SHORT).show();
+                                loginEmailET.setEnabled(true);
+                                loginPasswordET.setEnabled(true);
+                                loginButton.setClickable(true);
+                            } else if (task.getException() instanceof FirebaseNetworkException) {
+                                loginButton.setClickable(true);
+                                Toast.makeText(LoginActivity.this, R.string.no_internet, Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(LoginActivity.this, "Failed to login , please try again.", Toast.LENGTH_SHORT).show();
+                                loginButton.setClickable(true);
+                            }
                         } else {
                             checkIfEmailVerified();
                         }
                     });
+
         });
         loginButton.addTextChangedListener(new TextWatcher() {
             @Override
@@ -104,7 +122,7 @@ public class LoginActivity extends AppCompatActivity {
 
                         mUsernameReference = mDatabase.getReference("usernames").child(username);
                         mUIDReference = mDatabase.getReference("uids").child(currentUserUID);
-                        Contact currentUserContact = new Contact(name, username,currentUserUID);
+                        Contact currentUserContact = new Contact(name, username, currentUserUID);
                         //uploading username and email relation
                         mUsernameReference.setValue(currentUserUID).addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
@@ -149,7 +167,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void checkIfUsernameProvided() {
         emailForFirebase = email.replaceAll("\\.", ",");
-        currentUserUID=mAuth.getCurrentUser().getUid();
+        currentUserUID = mAuth.getCurrentUser().getUid();
         mUIDReference = mDatabase.getReference("contacts").child(currentUserUID);
 
 

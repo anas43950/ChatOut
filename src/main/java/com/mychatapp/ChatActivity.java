@@ -26,6 +26,9 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -84,8 +87,6 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
         receiverName = intentThatLaunchedActivity.getStringExtra(ContactsAdapter.nameKey);
         ((TextView) findViewById(R.id.chat_name_tv)).setText(receiverName);
 
-        //Initializing local database
-        messagesDbHelper = new MessagesDbHelper(this, receiverUID);
         //Initializing firebase variables
         mDatabase = FirebaseDatabase.getInstance();
         mFirebaseAuth = FirebaseAuth.getInstance();
@@ -94,12 +95,12 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
         mSenderContactsReference = mDatabase.getReference("contactList").child(currentUserUID).child(receiverUID);
         mReceiverContactsReference = mDatabase.getReference("contactList").child(receiverUID).child(currentUserUID);
 
-        ExecutorService executor = Executors.newFixedThreadPool(1);
         RecyclerView messagesRV = findViewById(R.id.messagesRV);
-        MaterialButton sendButton = findViewById(R.id.send_button);
+        ImageButton sendButton = findViewById(R.id.send_button);
+        ImageButton imagePickerButton = findViewById(R.id.image_picker_button);
         sendButton.setEnabled(false);
 
-        TextInputEditText messageEditText = findViewById(R.id.messageEditText);
+        EditText messageEditText = findViewById(R.id.messageEditText);
         LinearLayoutManager mLinearLayoutManager = new LinearLayoutManager(this);
         messagesRV.getRecycledViewPool().setMaxRecycledViews(0, 0);
 
@@ -114,11 +115,14 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
         //On layout change listener for scrolling to bottom after keyboard popup
         messagesRV.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             if (bottom < oldBottom) {
-                messagesRV.postDelayed(() -> {
+                messagesRV.post(() -> {
                     if (messagesAdapter.getItemCount() != 0) {
-                        messagesRV.smoothScrollToPosition(messagesAdapter.getItemCount() - 1);
+                        messagesRV.scrollToPosition(messagesAdapter.getItemCount() - 1);
                     }
-                }, 10);
+                    imagePickerButton.setVisibility(View.GONE);
+                });
+            } else if (bottom == oldBottom) {
+                imagePickerButton.setVisibility(View.VISIBLE);
             }
         });
 
@@ -152,7 +156,6 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
 
         //setting up menu
         findViewById(R.id.chat_activity_back_button).setOnClickListener(l -> finish());
-        MaterialButton imagePickerButton = findViewById(R.id.image_picker_button);
         imagePickerButton.setOnClickListener(l -> {
             if (isNetworkConnected()) {
                 Intent intentGalley = new Intent(Intent.ACTION_PICK);
@@ -165,7 +168,7 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
             }
             Log.d(TAG, "onCreate: timestamp" + System.currentTimeMillis());
         });
-        MaterialButton chatMenu = findViewById(R.id.chat_activity_menu_button);
+        ImageButton chatMenu = findViewById(R.id.chat_activity_menu_button);
         chatMenu.setOnClickListener(l -> {
             PopupMenu popupMenu = new PopupMenu(ChatActivity.this, chatMenu);
             popupMenu.getMenuInflater().inflate(R.menu.chat_activity_menu, popupMenu.getMenu());
@@ -230,7 +233,7 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
                     }
 
                 } else {
-                    Log.d(TAG, "onDataChange: latestMessageTimestamp: "+getLatestMessageTimestampForThisChat());
+                    Log.d(TAG, "onDataChange: latestMessageTimestamp: " + getLatestMessageTimestampForThisChat());
                     mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(loadAllMessagesSingleListener);
                     mMessagesDatabaseReference.child(currentUserUID).child(receiverUID)
                             .orderByKey()
@@ -244,10 +247,6 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
 
             }
         };
-
-
-
-
 
 
         //Edit text change listener
@@ -270,12 +269,15 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
         });
 
 
-
         sendButton.setOnClickListener(v -> {
+            if (!isNetworkConnected()) {
+                Toast.makeText(ChatActivity.this, R.string.no_internet, Toast.LENGTH_SHORT).show();
+                return;
+            }
             long timestamp = System.currentTimeMillis();
             Message message = new Message(messageEditText.getText().toString(), currentUserUID, timestamp, null);
             messagesAdapter.addMessage(message);
-            messageEditText.setText(" ");
+            messageEditText.setText("");
             sendButton.setEnabled(false);
 
             mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).child(String.valueOf(timestamp)).setValue(message).addOnCompleteListener(new OnCompleteListener<Void>() {
@@ -299,6 +301,8 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
                 Message message = snapshot.getValue(Message.class);
                 addMessageToDatabase(message);
                 if (!message.getUserID().equals(currentUserUID)) {
+                    messagesAdapter.addMessage(message);
+                } else if (message.getImageUrl() != null) {
                     messagesAdapter.addMessage(message);
                 }
             }
@@ -361,6 +365,8 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
 
         ArrayList<Message> messages = new ArrayList<>();
 
+        //Initializing local database
+        messagesDbHelper = new MessagesDbHelper(this, receiverUID);
         SQLiteDatabase mDb = messagesDbHelper.getReadableDatabase();
         String[] projection = {
                 MessageDetails.COLUMN_SENDER_UID,
@@ -381,6 +387,8 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
                 message.setUserID(cursor.getString(senderUIDColumnIndex));
                 messages.add(message);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             cursor.close();
             mDb.close();

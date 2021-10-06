@@ -2,16 +2,19 @@
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="64dp">
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_height="64dp"
+    android:orientation="vertical">
 
     <TextView
+        android:id="@+id/contactTextView"
         android:layout_width="match_parent"
         android:layout_height="64dp"
-        tools:text="Contact Name"
-        android:textSize="32sp"
         android:gravity="center_vertical"
         android:paddingStart="24dp"
-        android:id="@+id/contactTextView"/>
+        android:textColor="@color/secondaryTextColor"
+        android:textSize="32sp"
+        tools:text="Contact Name" />
 
 
 </androidx.appcompat.widget.LinearLayoutCompat>

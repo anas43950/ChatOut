@@ -1,53 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_gravity="center_horizontal"
-    android:background="@android:color/white"
-    android:orientation="vertical">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/search_dialog_tv"
-        style="@style/text_views_style"
-        android:layout_width="match_parent"
-        android:layout_height="30dp"
-        android:layout_marginTop="0dp"
-        android:layout_marginStart="10dp"
-        android:text="@string/enter_username"
-        android:textColor="@color/black" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="340dp"
+        android:layout_height="190dp"
+        android:background="@drawable/dialog_bg">
 
-    <EditText
-        android:id="@+id/search_by_username_edit_text"
-        style="@style/edit_text_views_style"
-        android:layout_width="match_parent"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:layout_below="@id/search_dialog_tv"
-        android:textColor="@color/black"
-        app:backgroundTint="@color/black"
-        />
+        <TextView
+            android:id="@+id/search_dialog_tv"
+            style="@style/text_views_style"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:layout_below="@id/search_by_username_edit_text"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="10dp">
+            android:layout_marginTop="10dp"
+            android:paddingStart="20dp"
+            android:text="@string/enter_username"
+            android:textColor="@color/secondaryTextColor"
+            app:layout_constraintTop_toTopOf="parent" />
+
+
+        <EditText
+            android:id="@+id/search_by_username_edit_text"
+            style="@style/edit_text_views_style"
+            android:layout_width="match_parent"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:textColor="@color/secondaryTextColor"
+            app:backgroundTint="@color/secondaryTextColor"
+            app:layout_constraintTop_toBottomOf="@+id/search_dialog_tv" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/cancel_search"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="@string/cancel_search" />
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginEnd="20dp"
+            android:text="@string/cancel_search"
+            android:textColor="@color/primaryTextColor"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/perform_search"
+            app:layout_constraintTop_toBottomOf="@+id/search_by_username_edit_text" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/perform_search"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginStart="10dp"
-            android:text="@string/perform_search" />
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="20dp"
+            android:text="@string/perform_search"
+            android:textColor="@color/primaryTextColor"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/search_by_username_edit_text" />
 
-    </LinearLayout>
 
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </RelativeLayout>
