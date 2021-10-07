@@ -219,14 +219,16 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
         loadAllMessagesSingleListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.getChildrenCount() != 0 && getLatestMessageTimestampForThisChat().equals("0")) {
+                if (snapshot.getChildrenCount() > 1 && getLatestMessageTimestampForThisChat().equals("0")) {
                     for (DataSnapshot ds : snapshot.getChildren()) {
+                        Log.d(TAG, "onDataChange: single event listener called");
                         Message message = ds.getValue(Message.class);
                         addMessageToDatabase(message);
                         messagesAdapter.addMessage(message);
                     }
 
                 } else {
+
                     mMessagesDatabaseReference.child(currentUserUID).child(receiverUID).removeEventListener(loadAllMessagesSingleListener);
                     mMessagesDatabaseReference.child(currentUserUID).child(receiverUID)
                             .orderByKey()
@@ -393,7 +395,7 @@ public class ChatActivity extends AppCompatActivity implements MessagesAdapter.C
         values.put(MessageDetails.COLUMN_MESSAGE, message.getMessage());
         values.put(MessageDetails.COLUMN_IMAGE_URI, message.getImageUrl());
         values.put(MessageDetails.COLUMN_SENDER_UID, message.getUserID());
-        long rowId = mDb.insert("receiver" + receiverUID, null, values);
+        mDb.insert("receiver" + receiverUID, null, values);
         mDb.close();
 
 

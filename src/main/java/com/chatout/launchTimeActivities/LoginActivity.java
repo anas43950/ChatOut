@@ -190,6 +190,7 @@ public class LoginActivity extends AppCompatActivity {
                 getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit()
                         .putBoolean("isFirstRun", false).apply();
                 startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                finish();
 
 
             }

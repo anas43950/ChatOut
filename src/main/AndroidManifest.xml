@@ -18,10 +18,10 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name="com.chatout.launchTimeActivities.LoginActivity"
-            android:noHistory="true" />
+            />
         <activity
             android:name="com.chatout.launchTimeActivities.SignupActivity"
-            android:noHistory="true" />
+            />
         <activity
             android:name="com.chatout.launchTimeActivities.SplashActivity"
             android:noHistory="true"

@@ -50,7 +50,10 @@
                 style="@style/edit_text_views_style"
                 android:background="@drawable/dialog_bg"
                 android:paddingStart="15dp"
+                tools:text="anas43950@gmail.com"
                 android:paddingEnd="15dp"
+                android:inputType="textEmailAddress"
+                android:maxLines="1"
                 app:backgroundTint="@android:color/darker_gray" />
 
             <TextView
@@ -66,11 +69,12 @@
                 android:inputType="textPassword"
                 android:paddingStart="15dp"
                 android:paddingEnd="15dp"
+                android:maxLines="1"
                 app:backgroundTint="@android:color/darker_gray" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/sign_up_button"
-                android:layout_width="140dp"
+                android:layout_width="wrap_content"
                 android:layout_height="50dp"
                 android:layout_gravity="center"
                 android:layout_marginTop="48dp"

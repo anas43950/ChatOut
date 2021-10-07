@@ -35,6 +35,8 @@
 
         <EditText
             android:id="@+id/login_email"
+            android:maxLines="1"
+            android:inputType="textEmailAddress"
             style="@style/edit_text_views_style" />
 
         <TextView
@@ -45,6 +47,7 @@
         <EditText
             android:id="@+id/login_password"
             style="@style/edit_text_views_style"
+            android:maxLines="1"
             android:inputType="textPassword" />
 
         <com.google.android.material.button.MaterialButton

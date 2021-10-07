@@ -15,6 +15,7 @@ import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -142,17 +143,7 @@ public class SignupActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 if (s.toString().equals("Continue")) {
-                    signUpButton.setOnClickListener(v -> {
 
-                        mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task1 -> {
-                            if (!task1.isSuccessful()) {
-
-                            } else {
-                                checkIfEmailVerified();
-                            }
-                        });
-
-                    });
                 }
 
             }
@@ -168,6 +159,17 @@ public class SignupActivity extends AppCompatActivity {
                 accountNotVerifiedSignupTV.setText(R.string.verification_link_sent);
                 signUpButton.setClickable(true);
                 signUpButton.setText("Continue");
+                signUpButton.setOnClickListener(v -> {
+
+                    mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task1 -> {
+                        if (!task1.isSuccessful()) {
+
+                        } else {
+                            checkIfEmailVerified();
+                        }
+                    });
+
+                });
 
 
             }
@@ -240,6 +242,7 @@ public class SignupActivity extends AppCompatActivity {
                         getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit()
                                 .putBoolean("isFirstRun", false).apply();
                         startActivity(new Intent(SignupActivity.this, MainActivity.class));
+                        finish();
                     }
                 });
 
